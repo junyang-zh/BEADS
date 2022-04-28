@@ -60,6 +60,7 @@ public:
 	bool subsumes(const EquivalenceClass &other) const;
 	void clear();
 	string toString() const;
+	string toFiveTupleString() const;
 
 	static uint64_t getMaxValue(FieldIndex index);
 };

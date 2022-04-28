@@ -25,6 +25,7 @@
 #include "net.h"
 #include <cstdio>
 #include <vector>
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
 #include "Rule.h"
@@ -108,7 +109,7 @@ public:
 	void processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, unordered_set< string >& visited, NextHopInfo& nextHopInfo, FILE* fp);
 
 	bool verifyRule(const Rule& rule, int command, double& updateTime, double& packetClassSearchTime, double& graphBuildTime, double& queryTime, unsigned long& ecCount, FILE* fp);
-	bool traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, const string& lastHop, unordered_set < string > visited, FILE* fp);
+	bool traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, const string& lastHop, vector < string > visited, FILE* fp);
 
 	int getTotalRuleCount() const;
 

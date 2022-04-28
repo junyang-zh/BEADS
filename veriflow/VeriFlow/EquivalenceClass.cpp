@@ -142,6 +142,30 @@ string EquivalenceClass::toString() const
 	return retVal;
 }
 
+string EquivalenceClass::toFiveTupleString() const
+{
+	char buffer[1024];
+	string retVal;
+	sprintf(buffer, "[EquivalenceClass] ");
+	
+	int fields[5] = { NW_SRC, NW_DST, NW_PROTO, TP_SRC, TP_DST };
+	const char* field_names[5] = { "nw_src", "nw_dst", "nw_proto", "tp_src", "tp_dst" };
+
+	for(int i = 0; i < 5; i++)
+	{
+		sprintf(buffer, "%s (%lu, %lu)", field_names[i],
+				this->lowerBound[fields[i]], this->upperBound[fields[i]]);
+		retVal += buffer;
+
+		if(i < (5 - 1))
+		{
+			retVal += ", ";
+		}
+	}
+
+	return retVal;
+}
+
 uint64_t EquivalenceClass::getMaxValue(FieldIndex index)
 {
 	switch(index)
