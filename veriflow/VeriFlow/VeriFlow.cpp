@@ -50,7 +50,7 @@ static int tcpServerSocket;
 static string controllerIpAddress = "127.0.0.1"; // localhost
 static unsigned short controllerPort = 6633; // default NOX port
 
-static FILE* logFile = NULL;
+static FILE* logFile = NULL, * perfFile = NULL;
 
 static pthread_mutex_t networkMutex, veriflowMutex;
 
@@ -63,6 +63,8 @@ vector<string> endhosts;
 
 vector<EquivalenceClass> faults;
 
+bool logOnlyPerformance = false;
+
 int main(int argc, char** argv)
 {
 	if(argc == 1)
@@ -73,7 +75,7 @@ int main(int argc, char** argv)
 	}
 	else if(argc < 6)
 	{
-		fprintf(stderr, "USAGE: %s <veriflow_port> <controller_address> <controller_port> <topology_file> <log_file>\n", argv[0]);
+		fprintf(stderr, "USAGE: %s <veriflow_port> <controller_address> <controller_port> <topology_file> <log_file> [perf_file [--log-only-performance]]\n", argv[0]);
 		exit(1);
 	}
 
@@ -92,6 +94,16 @@ int main(int argc, char** argv)
 
 	tcpServerSocket = createSocket(SOCK_STREAM);
 	logFile = fopen(argv[5], "w");
+
+	if (argc > 6) {
+		perfFile = fopen(argv[6], "w");
+		if (argc > 7) {
+			logOnlyPerformance = !strcmp(argv[7], "--log-only-performance");
+		}
+	}
+	else {
+		perfFile = logFile;
+	}
 
 	struct sigaction act;
 	act.sa_handler = signalHandler;
@@ -287,7 +299,7 @@ void* proxyCommunicationThreadFunction(void* arg)
 
 				// pthread_mutex_lock(info.mutex);
 				// fprintf(logFile, "[%s]\n", getIPAddress(info.clientAddress));
-				OpenFlowProtocolMessage::process(messageData, *info, logFile);
+				OpenFlowProtocolMessage::process(messageData, *info, logFile, perfFile);
 				// fprintf(logFile, "\n");
 				// fflush(logFile);
 				// pthread_mutex_unlock(info.mutex);
@@ -974,7 +986,9 @@ void VeriFlow::processCurrentHop(const EquivalenceClass& packetClass, Forwarding
 
 bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, double& packetClassSearchTime, double& graphBuildTime, double& queryTime, unsigned long& ecCount, FILE* fp)
 {
-	fprintf(fp, "\n[VeriFlow::verifyRule] verifying this rule: %s\n", rule.toString().c_str());
+	if (!logOnlyPerformance) {
+		fprintf(fp, "\n[VeriFlow::verifyRule] verifying this rule: %s\n", rule.toString().c_str());
+	}
 		
 	updateTime = packetClassSearchTime = graphBuildTime = queryTime = 0;
 	ecCount = 0;
@@ -1017,7 +1031,9 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 	else
 	{
 		// fprintf(stdout, "\n");
-		fprintf(fp, "[VeriFlow::verifyRule] ecCount: %lu\n", ecCount);
+		if (!logOnlyPerformance) {
+			fprintf(fp, "[VeriFlow::verifyRule] ecCount: %lu\n", ecCount);
+		}
 	}
 
 	// fprintf(stdout, "[VeriFlow::verifyRule] Generating forwarding graphs...\n");
@@ -1053,10 +1069,12 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 	}
 
 	fprintf(stderr, "faults size: %i\n", faults.size());
-	if (previousFailures > 0 && faults.size()==0) {
-		fprintf(fp, "[Veriflow::verifyRule] Network Fixed!\n");
-	} else if (previousFailures == 0 && faults.size() > 0) {
-		fprintf(fp, "[Veriflow::verifyRule] Network Broken!\n");
+	if (!logOnlyPerformance) {
+		if (previousFailures > 0 && faults.size()==0) {
+			fprintf(fp, "[Veriflow::verifyRule] Network Fixed!\n");
+		} else if (previousFailures == 0 && faults.size() > 0) {
+			fprintf(fp, "[Veriflow::verifyRule] Network Broken!\n");
+		}
 	}
 	fflush(fp);
 	previousFailures = faults.size();
@@ -1109,14 +1127,16 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	if(find(visited.begin(), visited.end(), currentLocation) != visited.end())
 	{
 		// Found a loop.
-		fprintf(fp, "\n");
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a LOOP for the following packet class at node %s.\n", currentLocation.c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toFiveTupleString().c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] Loop path is:\n");
-		for (auto & x : visited) {
-			fprintf(fp, "%s -> ", x.c_str());
+		if (!logOnlyPerformance) {
+			fprintf(fp, "\n");
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a LOOP for the following packet class at node %s.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toFiveTupleString().c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Loop path is:\n");
+			for (auto & x : visited) {
+				fprintf(fp, "%s -> ", x.c_str());
+			}
+			fprintf(fp, "%s\n", currentLocation.c_str());
 		}
-		fprintf(fp, "%s\n", currentLocation.c_str());
 		for(unsigned int i = 0; i < faults.size(); i++) {
 			if (packetClass.subsumes(faults[i])) {
 				faults.erase(faults.begin() + i);
@@ -1133,9 +1153,11 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	if(graph->links.find(currentLocation) == graph->links.end())
 	{
 		// Found a black hole.
-		fprintf(fp, "\n");
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as current location (%s) not found in the graph.\n", currentLocation.c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		if (!logOnlyPerformance) {
+			fprintf(fp, "\n");
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as current location (%s) not found in the graph.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		}
 		for(unsigned int i = 0; i < faults.size(); i++) {
 			if (packetClass.subsumes(faults[i])) {
 				faults.erase(faults.begin() + i);
@@ -1150,9 +1172,11 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	if(graph->links[currentLocation].empty() == true)
 	{
 		// Found a black hole.
-		fprintf(fp, "\n");
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		if (!logOnlyPerformance) {
+			fprintf(fp, "\n");
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		}
 		for(unsigned int i = 0; i < faults.size(); i++) {
 			if (packetClass.subsumes(faults[i])) {
 				faults.erase(faults.begin() + i);
@@ -1182,9 +1206,11 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	
 	if(itr == linkList.end()){
 		// Found a black hole.
-		fprintf(fp, "\n");
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		if (!logOnlyPerformance) {
+			fprintf(fp, "\n");
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		}
 		for(unsigned int i = 0; i < faults.size(); i++) {
 			if (packetClass.subsumes(faults[i])) {
 				faults.erase(faults.begin() + i);
@@ -1200,9 +1226,11 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	{
 		// Destination reachable.
 		// fprintf(fp, "[VeriFlow::traverseForwardingGraph] Destination reachable.\n");
-		fprintf(fp, "\n");
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] The following packet class reached destination at node %s.\n", currentLocation.c_str());
-		fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		if (!logOnlyPerformance) {
+			fprintf(fp, "\n");
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] The following packet class reached destination at node %s.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
+		}
 		for(unsigned int i = 0; i < faults.size(); i++) {
 			if (packetClass.subsumes(faults[i])) {
 				fprintf(stderr, "Removing fault!\n");

@@ -18,7 +18,7 @@
 #include "Network.h"
 #include "VeriFlow.h"
 
-void OpenFlowProtocolMessage::process(const char* data, ProxyConnectionInfo& info, FILE* fp)
+void OpenFlowProtocolMessage::process(const char* data, ProxyConnectionInfo& info, FILE* fp, FILE* timefp)
 {
 	const ofp_header* header = (const ofp_header*)data;
 	switch(header->type)
@@ -94,7 +94,7 @@ void OpenFlowProtocolMessage::process(const char* data, ProxyConnectionInfo& inf
 		break;
 
 	case OFPT_FLOW_MOD:
-		OpenFlowProtocolMessage::processFlowMod(data, info, fp);
+		OpenFlowProtocolMessage::processFlowMod(data, info, fp, timefp);
 		// fprintf(fp, "\n");
 		break;
 
@@ -369,7 +369,7 @@ void OpenFlowProtocolMessage::processPacketOut(const char* data, ProxyConnection
 	// fprintf(fp, "[PacketOut]\n");
 }
 
-void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionInfo& info, FILE* fp)
+void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionInfo& info, FILE* fp, FILE* timefp)
 {
 	const ofp_flow_mod* ofm = (const ofp_flow_mod*)data;
 
@@ -468,7 +468,7 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 
 				pthread_mutex_lock(info.veriflowMutex);
 				info.veriflow->verifyRule(rule, command, updateTime, packetClassSearchTime, graphBuildTime, queryTime, ecCount, fp);
-				fprintf(fp, "[OpenFlowProtocolMessage::processFlowMod] updateTime: %lf, packetClassSearchTime: %lf, graphBuildTime: %lf, queryTime: %lf\n", updateTime, packetClassSearchTime, graphBuildTime, queryTime);
+				fprintf(timefp, "%ld %ld %ld %ld\n", (int64_t)updateTime, (int64_t)packetClassSearchTime, (int64_t)graphBuildTime, (int64_t)queryTime);
 				// info.veriflow->addRule(rule);
 				pthread_mutex_unlock(info.veriflowMutex);
 			}

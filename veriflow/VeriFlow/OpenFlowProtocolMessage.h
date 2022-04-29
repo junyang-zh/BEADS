@@ -27,7 +27,7 @@ using namespace std;
 class OpenFlowProtocolMessage
 {
 public:
-	static void process(const char* data, ProxyConnectionInfo& info, FILE* fp);
+	static void process(const char* data, ProxyConnectionInfo& info, FILE* fp, FILE* timefp);
 
 	static void processHeader(const ofp_header* header, ProxyConnectionInfo& info, FILE* fp);
 
@@ -52,7 +52,7 @@ public:
 
 	/* Controller command messages. */
 	static void processPacketOut(const char* data, ProxyConnectionInfo& info, FILE* fp);
-	static void processFlowMod(const char* data, ProxyConnectionInfo& info, FILE* fp);
+	static void processFlowMod(const char* data, ProxyConnectionInfo& info, FILE* fp, FILE* timefp);
 	static void processPortMod(const char* data, ProxyConnectionInfo& info, FILE* fp);
 
 	/* Statistics messages. */
