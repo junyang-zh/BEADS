@@ -468,6 +468,7 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 
 				pthread_mutex_lock(info.veriflowMutex);
 				info.veriflow->verifyRule(rule, command, updateTime, packetClassSearchTime, graphBuildTime, queryTime, ecCount, fp);
+				fprintf(fp, "[OpenFlowProtocolMessage::processFlowMod] updateTime: %lf, packetClassSearchTime: %lf, graphBuildTime: %lf, queryTime: %lf\n", updateTime, packetClassSearchTime, graphBuildTime, queryTime);
 				// info.veriflow->addRule(rule);
 				pthread_mutex_unlock(info.veriflowMutex);
 			}
