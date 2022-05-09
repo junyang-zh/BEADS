@@ -1063,12 +1063,35 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 		vector< string > visited;
 		string lastHop = network.getNextHopIpAddress(rule.location,rule.in_port);
 		// fprintf(fp, "start traversing at: %s\n", rule.location.c_str());
-		if(!this->traverseForwardingGraph(vFinalPacketClasses[i], vGraph[i], rule.location, lastHop, visited, fp)) {
+		if(this->traverseForwardingGraph(vFinalPacketClasses[i], vGraph[i], rule.location, lastHop, visited, fp)) 
+		{ // The rule is verified
+			fprintf(stderr, "Rule verified true!\n");
+			for(unsigned int j = 0; j < faults.size(); j++) {
+				if (vFinalPacketClasses[i].subsumes(faults[j])) {
+					fprintf(stderr, "Removing fault!\n");
+					faults.erase(faults.begin() + j);
+					j--;
+				}
+			}
+		} // The rule introduces errors
+		else {
+			bool contained = false;
+			for(unsigned int j = 0; j < faults.size(); j++) {
+				if (faults[j].subsumes(vFinalPacketClasses[i])){
+					contained = true;
+					break;
+				}
+				if (vFinalPacketClasses[i].subsumes(faults[j])) {
+					faults.erase(faults.begin() + j);
+					j--;
+				}
+			}
+			if (!contained) faults.push_back(vFinalPacketClasses[i]);
 			++currentFailures;
 		}
 	}
 
-	fprintf(stderr, "faults size: %i\n", faults.size());
+	fprintf(stderr, "faults size: %ld\n", faults.size());
 	if (!logOnlyPerformance) {
 		if (previousFailures > 0 && faults.size()==0) {
 			fprintf(fp, "[Veriflow::verifyRule] Network Fixed!\n");
@@ -1137,13 +1160,6 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			}
 			fprintf(fp, "%s\n", currentLocation.c_str());
 		}
-		for(unsigned int i = 0; i < faults.size(); i++) {
-			if (packetClass.subsumes(faults[i])) {
-				faults.erase(faults.begin() + i);
-				i--;
-			}
-		}
-		faults.push_back(packetClass);
 
 		return false;
 	}
@@ -1158,13 +1174,6 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as current location (%s) not found in the graph.\n", currentLocation.c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
-		for(unsigned int i = 0; i < faults.size(); i++) {
-			if (packetClass.subsumes(faults[i])) {
-				faults.erase(faults.begin() + i);
-				i--;
-			}
-		}
-		faults.push_back(packetClass);
 
 		return false;
 	}
@@ -1177,13 +1186,6 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
-		for(unsigned int i = 0; i < faults.size(); i++) {
-			if (packetClass.subsumes(faults[i])) {
-				faults.erase(faults.begin() + i);
-				i--;
-			}
-		}
-		faults.push_back(packetClass);
 
 		return false;
 	}
@@ -1211,13 +1213,6 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
-		for(unsigned int i = 0; i < faults.size(); i++) {
-			if (packetClass.subsumes(faults[i])) {
-				faults.erase(faults.begin() + i);
-				i--;
-			}
-		}
-		faults.push_back(packetClass);
 
 		return false;
 	}
@@ -1230,13 +1225,6 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			fprintf(fp, "\n");
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] The following packet class reached destination at node %s.\n", currentLocation.c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
-		}
-		for(unsigned int i = 0; i < faults.size(); i++) {
-			if (packetClass.subsumes(faults[i])) {
-				fprintf(stderr, "Removing fault!\n");
-				faults.erase(faults.begin() + i);
-				i--;
-			}
 		}
 		return true;
 	}
