@@ -106,6 +106,13 @@ public:
 	bool removeRule(const Rule& rule);
 
 	bool getAffectedEquivalenceClasses(const Rule& rule, int command, vector< EquivalenceClass >& vFinalPacketClasses, vector< vector< Trie* > >& vFinalTries);
+	void taverseNestedTries(
+		const Rule& rule, int curLevel, uint64_t* cur_lbs, uint64_t* cur_ubs,
+		const vector< EquivalenceClass > & vCurLevelPacketClasses,
+		const vector< Trie* >& vCurLevelTries,
+		vector< EquivalenceClass >& vFinalPacketClasses,
+		vector< vector< Trie* > >& vFinalTries
+	);
 	void processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, unordered_set< string >& visited, NextHopInfo& nextHopInfo, FILE* fp);
 
 	bool verifyRule(const Rule& rule, int command, double& updateTime, double& packetClassSearchTime, double& graphBuildTime, double& queryTime, unsigned long& ecCount, FILE* fp);
