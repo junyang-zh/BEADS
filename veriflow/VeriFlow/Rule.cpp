@@ -22,6 +22,28 @@
 
 using namespace std;
 
+void Rule::initIntValues() {
+	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
+	{
+		if((i == DL_SRC) || (i == DL_DST))
+		{
+			this->fieldValueInt[i] = ::getMacValueAsInt(this->fieldValue[i]);
+			this->fieldMaskInt[i] = ::getMacValueAsInt(this->fieldMask[i]);
+		}
+		else if((i == NW_SRC) || (i == NW_DST))
+		{
+			this->fieldValueInt[i] = ::getIpValueAsInt(this->fieldValue[i]);
+			this->fieldMaskInt[i] = ::getIpValueAsInt(this->fieldMask[i]);
+		}
+		else
+		{
+			this->fieldValueInt[i] = strtoul(this->fieldValue[i].c_str(), NULL, 10);
+			this->fieldMaskInt[i] = strtoul(this->fieldMask[i].c_str(), NULL, 10);
+		}
+	}
+	this->locationInt = ::getIpValueAsInt(this->location);
+}
+
 Rule::Rule()
 {
 	this->type = DUMMY;
@@ -39,6 +61,7 @@ Rule::Rule()
 	this->in_port = 65536;
 	this->priority = INVALID_PRIORITY;
 	// this->outPort = OFPP_NONE;
+	this->initIntValues();
 }
 
 Rule::Rule(const Rule& other)
@@ -49,7 +72,10 @@ Rule::Rule(const Rule& other)
 	{
 		this->fieldValue[i] = other.fieldValue[i];
 		this->fieldMask[i] = other.fieldMask[i];
+		this->fieldValueInt[i] = other.fieldValueInt[i];
+		this->fieldMaskInt[i] = other.fieldMaskInt[i];
 	}
+	this->locationInt = other.locationInt;
 
 	this->wildcards = other.wildcards;
 
@@ -66,24 +92,8 @@ EquivalenceClass Rule::getEquivalenceClass() const
 
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		uint64_t fieldValue = 0;
-		uint64_t fieldMask = 0;
-
-		if((i == DL_SRC) || (i == DL_DST))
-		{
-			fieldValue = ::getMacValueAsInt(this->fieldValue[i]);
-			fieldMask = ::getMacValueAsInt(this->fieldMask[i]);
-		}
-		else if((i == NW_SRC) || (i == NW_DST))
-		{
-			fieldValue = ::getIpValueAsInt(this->fieldValue[i]);
-			fieldMask = ::getIpValueAsInt(this->fieldMask[i]);
-		}
-		else
-		{
-			fieldValue = strtoul(this->fieldValue[i].c_str(), NULL, 10);
-			fieldMask = strtoul(this->fieldMask[i].c_str(), NULL, 10);
-		}
+		uint64_t fieldValue = this->fieldValueInt[i];
+		uint64_t fieldMask = this->fieldMaskInt[i];
 
 		uint64_t maskedFieldValue = fieldValue & fieldMask;
 
@@ -119,24 +129,8 @@ EquivalenceRange Rule::getEquivalenceRange(FieldIndex index) const
 {
 	EquivalenceRange range;
 
-	uint64_t fieldValue = 0;
-	uint64_t fieldMask = 0;
-
-	if((index == DL_SRC) || (index == DL_DST))
-	{
-		fieldValue = ::getMacValueAsInt(this->fieldValue[index]);
-		fieldMask = ::getMacValueAsInt(this->fieldMask[index]);
-	}
-	else if((index == NW_SRC) || (index == NW_DST))
-	{
-		fieldValue = ::getIpValueAsInt(this->fieldValue[index]);
-		fieldMask = ::getIpValueAsInt(this->fieldMask[index]);
-	}
-	else
-	{
-		fieldValue = strtoul(this->fieldValue[index].c_str(), NULL, 10);
-		fieldMask = strtoul(this->fieldMask[index].c_str(), NULL, 10);
-	}
+	uint64_t fieldValue = this->fieldValueInt[index];
+	uint64_t fieldMask = this->fieldMaskInt[index];
 
 	uint64_t maskedFieldValue = fieldValue & fieldMask;
 
@@ -171,8 +165,8 @@ bool Rule::equals(const Rule& other) const
 {
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		if((this->fieldValue[i].compare(other.fieldValue[i]) != 0)
-				|| (this->fieldMask[i].compare(other.fieldMask[i]) != 0))
+		if((this->fieldValueInt[i] != other.fieldValueInt[i])
+				|| (this->fieldMaskInt[i] != other.fieldMaskInt[i]))
 		{
 			return false;
 		}
@@ -180,7 +174,7 @@ bool Rule::equals(const Rule& other) const
 
 	if((this->type == other.type)
 			&& (this->wildcards == other.wildcards)
-			&& (this->location.compare(other.location) == 0)
+			&& (this->locationInt == other.locationInt)
 			&& (this->in_port == other.in_port)
 			// && (this->nextHop.compare(other.nextHop) == 0) // Not present in OFPT_FLOW_REMOVED messages.
 			&& (this->priority == other.priority)
@@ -205,26 +199,12 @@ int Rule::operator()() const
 	int retVal = 0;
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		if((i == DL_SRC) || (i == DL_DST))
-		{
-			retVal += (int)::getMacValueAsInt(this->fieldValue[i]);
-			retVal += (int)::getMacValueAsInt(this->fieldMask[i]);
-		}
-		else if((i == NW_SRC) || (i == NW_DST))
-		{
-			retVal += (int)::getIpValueAsInt(this->fieldValue[i]);
-			retVal += (int)::getIpValueAsInt(this->fieldMask[i]);
-		}
-		else
-		{
-			retVal += atoi(this->fieldValue[i].c_str());
-			retVal += atoi(this->fieldMask[i].c_str());
-		}
+		retVal += (int)this->fieldValueInt[i] + (int)this->fieldMaskInt[i];
 	}
 
 	retVal += this->type;
 	retVal += (int)this->wildcards;
-	retVal += (int)::getIpValueAsInt(this->location);
+	retVal += (int)this->locationInt;
 	retVal += this->in_port;
 	// retVal += (int)::getIpValueAsInt(this->nextHop);
 	retVal += this->priority;

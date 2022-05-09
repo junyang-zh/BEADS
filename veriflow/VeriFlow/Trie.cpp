@@ -143,8 +143,8 @@ TrieNode* Trie::addRule(const Rule& rule)
 		}
 	}
 
-	uint64_t fieldValue = Trie::getIntValue(this->fieldIndex, rule.fieldValue[this->fieldIndex]);
-	uint64_t fieldMask = Trie::getIntValue(this->fieldIndex, rule.fieldMask[this->fieldIndex]);
+	uint64_t fieldValue = rule.fieldValueInt[this->fieldIndex];
+	uint64_t fieldMask = rule.fieldMaskInt[this->fieldIndex];
 	uint64_t maskedFieldValue = fieldValue & fieldMask;
 
 	TrieNode* currentNode = this->root;
@@ -337,8 +337,8 @@ void Trie::getEquivalenceClasses(const Rule& rule, vector< EquivalenceClass >& v
 		return;
 	}
 
-	uint64_t fieldValue = Trie::getIntValue(this->fieldIndex, rule.fieldValue[this->fieldIndex]);
-	uint64_t fieldMask = Trie::getIntValue(this->fieldIndex, rule.fieldMask[this->fieldIndex]);
+	uint64_t fieldValue = rule.fieldValueInt[this->fieldIndex];
+	uint64_t fieldMask = rule.fieldMaskInt[this->fieldIndex];
 	uint64_t maskedFieldValue = fieldValue & fieldMask;
 
 	TrieNode* currentNode = this->root;
@@ -570,7 +570,7 @@ void Trie::getNextLevelEquivalenceClasses(FieldIndex currentFieldIndex, uint64_t
 			continue;
 		}
 
-		vector< TrieNode* > vCurrentLevelNodes, vNextLevelNodes;
+		deque< TrieNode* > vCurrentLevelNodes, vNextLevelNodes;
 		vCurrentLevelNodes.push_back(inputTrie->root);
 		TrieNode* currentNode = NULL;
 
@@ -578,8 +578,8 @@ void Trie::getNextLevelEquivalenceClasses(FieldIndex currentFieldIndex, uint64_t
 		{
 			while(vCurrentLevelNodes.empty() == false)
 			{
-				currentNode = vCurrentLevelNodes.at(0);
-				vCurrentLevelNodes.erase(vCurrentLevelNodes.begin());
+				currentNode = vCurrentLevelNodes.front();
+				vCurrentLevelNodes.pop_front();
 
 				if(currentNode == NULL)
 				{
@@ -634,13 +634,12 @@ void Trie::getNextLevelEquivalenceClasses(FieldIndex currentFieldIndex, uint64_t
 				}
 			}
 
-			vCurrentLevelNodes = vNextLevelNodes;
-			vNextLevelNodes.erase(vNextLevelNodes.begin(), vNextLevelNodes.end());
+			swap(vCurrentLevelNodes, vNextLevelNodes);
+			vNextLevelNodes.clear();
 		}
 
-		for(unsigned int i = 0; i < vCurrentLevelNodes.size(); i++)
+		for(const auto & node : vCurrentLevelNodes)
 		{
-			TrieNode* node = vCurrentLevelNodes[i];
 			if(node->nextLevelTrie != NULL)
 			{
 				vOutputTries.push_back(node->nextLevelTrie);
@@ -658,8 +657,8 @@ void Trie::getNextLevelEquivalenceClasses(FieldIndex currentFieldIndex, uint64_t
 	list< uint64_t > lowerBoundList, upperBoundList;
 	unordered_map< uint64_t, uint64_t > lowerBoundMap, upperBoundMap;
 
-	fieldValue = Trie::getIntValue(nextFieldIndex, rule.fieldValue[nextFieldIndex]);
-	fieldMask = Trie::getIntValue(nextFieldIndex, rule.fieldMask[nextFieldIndex]);
+	fieldValue = rule.fieldValueInt[nextFieldIndex];
+	fieldMask = rule.fieldMaskInt[nextFieldIndex];
 	maskedFieldValue = fieldValue & fieldMask;
 
 	for(unsigned int t = 0; t < vOutputTries.size(); t++)

@@ -348,6 +348,8 @@ void OpenFlowProtocolMessage::processFlowRemoved(const char* data, ProxyConnecti
 	rule.nextHop = "";
 	rule.priority = ntohs(ofr->priority);
 
+	rule.initIntValues();
+
 	/*double updateTime = 0, packetClassSearchTime = 0, graphBuildTime = 0, queryTime = 0;
 	unsigned long ecCount = 0;*/
 
@@ -462,6 +464,8 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 				rule.location = deviceIpAddress;
 				rule.nextHop = info.network->getNextHopIpAddress(deviceIpAddress, ntohs(oao->port));
 				rule.priority = ntohs(ofm->priority);
+
+				rule.initIntValues();
 
 				double updateTime = 0, packetClassSearchTime = 0, graphBuildTime = 0, queryTime = 0;
 				unsigned long ecCount = 0;

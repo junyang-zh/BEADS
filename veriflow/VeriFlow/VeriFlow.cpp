@@ -675,7 +675,7 @@ void VeriFlow::taverseNestedTries(
 	for (size_t i = 0; i < vCurLevelPacketClasses.size(); ++i) {
 		cur_lbs[curLevel] = vCurLevelPacketClasses[i].lowerBound[curLevel];
 		cur_ubs[curLevel] = vCurLevelPacketClasses[i].upperBound[curLevel];
-		if (curLevel == ALL_FIELD_INDEX_END_MARKER - 1) {
+		if (curLevel == ALL_FIELD_INDEX_END_MARKER - 1) { // if is the last level
 			EquivalenceClass packetClass(cur_lbs, cur_ubs);
 			// fprintf(stdout, "[VeriFlow::getAffectedEquivalenceClasses] Packet: %s\n", packet.toString().c_str());
 			// fflush(stdout);

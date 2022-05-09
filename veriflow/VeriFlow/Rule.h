@@ -17,6 +17,7 @@
 #define RULE_H_
 
 #include <string>
+#include <vector>
 #include "EquivalenceClass.h"
 #include "EquivalenceRange.h"
 
@@ -36,6 +37,9 @@ public:
 	RuleType type;
 	string fieldValue[ALL_FIELD_INDEX_END_MARKER];
 	string fieldMask[ALL_FIELD_INDEX_END_MARKER];
+	uint64_t fieldValueInt[ALL_FIELD_INDEX_END_MARKER];
+	uint64_t fieldMaskInt[ALL_FIELD_INDEX_END_MARKER];
+	uint64_t locationInt;
 
 	uint32_t wildcards;
 
@@ -45,6 +49,7 @@ public:
 	uint16_t priority;
 	// uint16_t outPort; // Not used in this version.
 
+	void initIntValues();
 	Rule();
 	void testInit();
 	Rule(const Rule& other);
