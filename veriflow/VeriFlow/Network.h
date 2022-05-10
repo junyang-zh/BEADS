@@ -22,22 +22,24 @@
 #include <unordered_map>
 #include "ForwardingDevice.h"
 
+#define IP_INVALID 0xFFFFFFFFFFFFFFFFul
+
 using namespace std;
 
 class Network
 {
 private:
-	unordered_map< string, ForwardingDevice > deviceMap;
-	unordered_map< uint64_t, string > idToIpAddressMap;
+	unordered_map< uint64_t, ForwardingDevice > deviceMap;
+	unordered_map< uint64_t, uint64_t > idToIpAddressMap;
 
 public:
-	bool addDevice(uint64_t id, const string& ipAddress, bool endDevice);
-	bool addPort(const string& ipAddress, unsigned int port, const string& nextHopIpAddress);
-	string getNextHopIpAddress(const string& ipAddress, unsigned int port);
-	bool isEndDevice(const string& ipAddress);
-	bool isDevicePresent(const string& ipAddress) const;
-	bool isPortPresent(const string& ipAddress, unsigned int port);
-	string getDeviceIpAddress(uint64_t id);
+	bool addDevice(uint64_t id, uint64_t ipAddress, bool endDevice);
+	bool addPort(uint64_t ipAddress, unsigned int port, uint64_t nextHopIpAddress);
+	uint64_t getNextHopIpAddress(uint64_t ipAddress, unsigned int port);
+	bool isEndDevice(uint64_t ipAddress);
+	bool isDevicePresent(uint64_t ipAddress) const;
+	bool isPortPresent(uint64_t ipAddress, unsigned int port);
+	uint64_t getDeviceIpAddress(uint64_t id);
 	void print() const;
 };
 

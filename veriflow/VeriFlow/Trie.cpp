@@ -26,7 +26,7 @@
 using namespace std;
 
 extern int mode;
-extern vector<string> endhosts;
+extern vector<uint64_t> endhosts;
 
 Trie::Trie(FieldIndex fi)
 {
@@ -80,15 +80,15 @@ uint64_t Trie::getIntValue(FieldIndex index, const string& valueOrMask)
 	}
 }
 
-TrieNode* Trie::findNode(const string& fieldValue, const string& fieldMask)
+TrieNode* Trie::findNode(uint64_t fieldValueInt, uint64_t fieldMaskInt)
 {
 	if((this->root == NULL) || (this->totalRuleCount == 0))
 	{
 		return NULL;
 	}
 
-	uint64_t fieldValueInt = Trie::getIntValue(this->fieldIndex, fieldValue);
-	uint64_t fieldMaskInt = Trie::getIntValue(this->fieldIndex, fieldMask);
+	//uint64_t fieldValueInt = Trie::getIntValue(this->fieldIndex, fieldValue);
+	//uint64_t fieldMaskInt = Trie::getIntValue(this->fieldIndex, fieldMask);
 	uint64_t maskedFieldValue = fieldValueInt & fieldMaskInt;
 
 	TrieNode* currentNode = this->root;
@@ -1009,19 +1009,19 @@ ForwardingGraph* Trie::getForwardingGraph(FieldIndex currentFieldIndex, const ve
 					if(mode == TEST_MODE)
 					{
 						// For the testVerification() experiment present in Test.cpp.
-						if(rule.location.compare(rule.nextHop) == 0)
+						if(rule.locationInt == rule.nextHopInt)
 						{
 							link.isGateway = true;
 						}
 					}
 					else if(mode == PROXY_MODE)
 					{
-						if(rule.nextHop.compare(rule.fieldValue[NW_DST]) == 0)
+						if(rule.nextHopInt == rule.fieldValueInt[NW_DST])
 						{
 							link.isGateway = true;
 						}
 						for(unsigned int i=0; i < endhosts.size(); i++){
-							if (rule.nextHop.compare(endhosts[i])==0){
+							if (rule.nextHopInt == endhosts[i]){
 								link.isGateway = true;
 								break;
 							}

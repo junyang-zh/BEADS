@@ -68,8 +68,9 @@ struct ProxyConnectionInfo
 
 struct NextHopInfo
 {
-	string nextHop;
-	unordered_set< string > visited;
+	//string nextHop;
+	uint64_t nextHopInt;
+	unordered_set< uint64_t > visited;
 };
 
 void parseTopologyFile(const string& fileName, Network& network);
@@ -80,11 +81,13 @@ void* proxyCommunicationThreadFunction(void* arg);
 void signalHandler(int sig);
 
 uint64_t getMacValueAsInt(const string& macAddress);
+uint64_t getMacValueAsInt(const uint8_t* macAddress);
 string getMacValueAsString(uint64_t macAddress);
 string getMacValueAsString(const uint8_t* macAddress);
 
 uint64_t getIpValueAsInt(const string& ipAddress);
 string getIpValueAsString(uint64_t ipAddress);
+uint64_t convertMaskLenToInt(unsigned int mask);
 string convertMaskToDottedFormat(unsigned int mask);
 
 string convertIntToString(unsigned int value);
@@ -113,10 +116,10 @@ public:
 		vector< EquivalenceClass >& vFinalPacketClasses,
 		vector< vector< Trie* > >& vFinalTries
 	);
-	void processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, unordered_set< string >& visited, NextHopInfo& nextHopInfo, FILE* fp);
+	void processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, uint64_t currentLocation, unordered_set< uint64_t >& visited, NextHopInfo& nextHopInfo, FILE* fp);
 
 	bool verifyRule(const Rule& rule, int command, double& updateTime, double& packetClassSearchTime, double& graphBuildTime, double& queryTime, unsigned long& ecCount, FILE* fp);
-	bool traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, const string& lastHop, vector < string > visited, FILE* fp);
+	bool traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, uint64_t currentLocation, uint64_t lastHop, vector < uint64_t > visited, FILE* fp);
 
 	int getTotalRuleCount() const;
 

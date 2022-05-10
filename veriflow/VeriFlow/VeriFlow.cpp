@@ -59,7 +59,7 @@ Network network;
 
 int mode = TEST_MODE;
 
-vector<string> endhosts;
+vector<uint64_t> endhosts;
 
 vector<EquivalenceClass> faults;
 
@@ -180,10 +180,10 @@ void parseTopologyFile(const string& fileName, Network& network)
 		bool endDevice = atoi(st.nextToken().c_str());
 
 		if (endDevice){
-				endhosts.push_back(ipAddress);
+				endhosts.push_back(::getIpValueAsInt(ipAddress));
 		}
 
-		network.addDevice(id, ipAddress, endDevice);
+		network.addDevice(id, ::getIpValueAsInt(ipAddress), endDevice);
 
 		while(st.hasMoreTokens() == true)
 		{
@@ -195,7 +195,7 @@ void parseTopologyFile(const string& fileName, Network& network)
 
 			string nextHopIpAddress = st.nextToken();
 
-			network.addPort(ipAddress, atoi(port.c_str()), nextHopIpAddress);
+			network.addPort(::getIpValueAsInt(ipAddress), atoi(port.c_str()), ::getIpValueAsInt(nextHopIpAddress));
 		}
 	}
 
@@ -375,6 +375,19 @@ uint64_t getMacValueAsInt(const string& macAddress)
 	return macValue;
 }
 
+uint64_t getMacValueAsInt(const uint8_t* macAddress)
+{
+	uint64_t macValue = 0;
+
+	for(int i = 0; i < OFP_ETH_ALEN; i++)
+	{
+		macValue <<= 8;
+		macValue |= macAddress[i];
+	}
+
+	return macValue;
+}
+
 string getMacValueAsString(uint64_t macAddress)
 {
 	unsigned int values[6];
@@ -442,13 +455,18 @@ string getIpValueAsString(uint64_t ipAddress)
 	return ipValue;
 }
 
-string convertMaskToDottedFormat(unsigned int mask)
+uint64_t convertMaskLenToInt(unsigned int mask)
 {
 	uint64_t maskValue = 0xFFFFFFFF;
 	maskValue >>= mask;
 	maskValue <<= mask;
 
-	return ::getIpValueAsString(maskValue);
+	return maskValue;
+}
+
+string convertMaskToDottedFormat(unsigned int mask)
+{
+	return ::getIpValueAsString(convertMaskLenToInt(mask));
 }
 
 string convertIntToString(unsigned int value)
@@ -556,7 +574,7 @@ bool VeriFlow::removeRule(const Rule& rule)
 	vector< TrieNode* > vLeaves;
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		TrieNode* leaf = currentTrie->findNode(rule.fieldValue[i], rule.fieldMask[i]);
+		TrieNode* leaf = currentTrie->findNode(rule.fieldValueInt[i], rule.fieldMaskInt[i]);
 		if(leaf == NULL)
 		{
 			return false;
@@ -703,7 +721,7 @@ void VeriFlow::taverseNestedTries(
 	}
 }
 
-void VeriFlow::processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, unordered_set< string >& visited, NextHopInfo& nextHopInfo, FILE* fp)
+void VeriFlow::processCurrentHop(const EquivalenceClass& packetClass, ForwardingGraph* graph, uint64_t currentLocation, unordered_set< uint64_t >& visited, NextHopInfo& nextHopInfo, FILE* fp)
 {
 	if(graph == NULL)
 	{
@@ -744,7 +762,7 @@ void VeriFlow::processCurrentHop(const EquivalenceClass& packetClass, Forwarding
 	const list< ForwardingLink >& linkList = graph->links[currentLocation];
 	list< ForwardingLink >::const_iterator itr = linkList.begin();
 
-	nextHopInfo.nextHop = itr->rule.nextHop;
+	nextHopInfo.nextHopInt = itr->rule.nextHopInt;
 	nextHopInfo.visited = visited;
 	nextHopInfo.visited.insert(currentLocation);
 }
@@ -825,10 +843,10 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 	size_t currentFailures = 0;
 	for(unsigned int i = 0; i < vGraph.size(); i++)
 	{
-		vector< string > visited;
-		string lastHop = network.getNextHopIpAddress(rule.location,rule.in_port);
+		vector< uint64_t > visited;
+		uint64_t lastHop = network.getNextHopIpAddress(rule.locationInt,rule.in_port);
 		// fprintf(fp, "start traversing at: %s\n", rule.location.c_str());
-		if(this->traverseForwardingGraph(vFinalPacketClasses[i], vGraph[i], rule.location, lastHop, visited, fp)) 
+		if(this->traverseForwardingGraph(vFinalPacketClasses[i], vGraph[i], rule.locationInt, lastHop, visited, fp)) 
 		{ // The rule is verified
 			fprintf(stderr, "Rule verified true!\n");
 			for(unsigned int j = 0; j < faults.size(); j++) {
@@ -894,7 +912,7 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 	return true;
 }
 
-bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, const string& currentLocation, const string& lastHop, vector< string > visited, FILE* fp)
+bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, ForwardingGraph* graph, uint64_t currentLocation, uint64_t lastHop, vector< uint64_t > visited, FILE* fp)
 {
 
 	// fprintf(fp, "traversing at node: %s\n", currentLocation.c_str());
@@ -907,7 +925,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		return true;
 	}
 
-	if(currentLocation.compare("") == 0)
+	if(currentLocation == IP_INVALID)
 	{
 		return true;
 	}
@@ -917,13 +935,13 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// Found a loop.
 		if (!logOnlyPerformance) {
 			fprintf(fp, "\n");
-			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a LOOP for the following packet class at node %s.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a LOOP for the following packet class at node %s.\n", ::getIpValueAsString(currentLocation).c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toFiveTupleString().c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Loop path is:\n");
 			for (auto & x : visited) {
-				fprintf(fp, "%s -> ", x.c_str());
+				fprintf(fp, "%s -> ", ::getIpValueAsString(x).c_str());
 			}
-			fprintf(fp, "%s\n", currentLocation.c_str());
+			fprintf(fp, "%s\n", ::getIpValueAsString(currentLocation).c_str());
 		}
 		return false;
 	}
@@ -935,7 +953,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// Found a black hole.
 		if (!logOnlyPerformance) {
 			fprintf(fp, "\n");
-			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as current location (%s) not found in the graph.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as current location (%s) not found in the graph.\n", ::getIpValueAsString(currentLocation).c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
 		return false;
@@ -946,7 +964,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// Found a black hole.
 		if (!logOnlyPerformance) {
 			fprintf(fp, "\n");
-			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", ::getIpValueAsString(currentLocation).c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
 		return false;
@@ -957,13 +975,13 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 	const list< ForwardingLink >& linkList = graph->links[currentLocation];
 	list< ForwardingLink >::const_iterator itr = linkList.begin();
 	// input_port as a filter
-	if(lastHop.compare("NULL") == 0 || itr->rule.in_port == 65536){
+	if(lastHop == IP_INVALID || itr->rule.in_port == 65536){
 		// do nothing
 	}
 	else{
 		while(itr != linkList.end()){
-			string connected_hop = network.getNextHopIpAddress(currentLocation, itr->rule.in_port);
-			if(connected_hop.compare(lastHop) == 0) break;
+			uint64_t connected_hop = network.getNextHopIpAddress(currentLocation, itr->rule.in_port);
+			if(connected_hop == lastHop) break;
 			itr++;
 		}
 	}
@@ -972,7 +990,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// Found a black hole.
 		if (!logOnlyPerformance) {
 			fprintf(fp, "\n");
-			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] Found a BLACK HOLE for the following packet class as there is no outgoing link at current location (%s).\n", ::getIpValueAsString(currentLocation).c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
 		return false;
@@ -984,7 +1002,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// fprintf(fp, "[VeriFlow::traverseForwardingGraph] Destination reachable.\n");
 		if (!logOnlyPerformance) {
 			fprintf(fp, "\n");
-			fprintf(fp, "[VeriFlow::traverseForwardingGraph] The following packet class reached destination at node %s.\n", currentLocation.c_str());
+			fprintf(fp, "[VeriFlow::traverseForwardingGraph] The following packet class reached destination at node %s.\n", ::getIpValueAsString(currentLocation).c_str());
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str());
 		}
 		return true;
@@ -994,7 +1012,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 		// Move to the next location.
 		// fprintf(fp, "[VeriFlow::traverseForwardingGraph] Moving to node %s.\n", itr->rule.nextHop.c_str());
 
-		if(itr->rule.nextHop.compare("") == 0)
+		if(itr->rule.nextHopInt == 0)
 		{
 			// This rule is a packet filter. It drops packets.
 			/* fprintf(fp, "\n");
@@ -1002,7 +1020,7 @@ bool VeriFlow::traverseForwardingGraph(const EquivalenceClass& packetClass, Forw
 			fprintf(fp, "[VeriFlow::traverseForwardingGraph] PacketClass: %s\n", packetClass.toString().c_str()); */
 		}
 
-		return this->traverseForwardingGraph(packetClass, graph, itr->rule.nextHop, currentLocation, visited, fp);
+		return this->traverseForwardingGraph(packetClass, graph, itr->rule.nextHopInt, currentLocation, visited, fp);
 	}
 }
 

@@ -27,7 +27,7 @@ using namespace std;
 class ForwardingGraph
 {
 public:
-	unordered_map< string, list< ForwardingLink > > links;
+	unordered_map< uint64_t, list< ForwardingLink > > links;
 	int totalRuleCount;
 
 	ForwardingGraph();

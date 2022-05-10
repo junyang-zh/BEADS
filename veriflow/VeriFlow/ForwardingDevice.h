@@ -30,7 +30,7 @@ public:
 	uint64_t id;
 	string ipAddress;
 	bool endDevice;
-	unordered_map< unsigned int, string > portToNextHopIpAddressMap;
+	unordered_map< unsigned int, uint64_t > portToNextHopIpAddressMap;
 };
 
 #endif /* FORWARDINGDEVICE_H_ */

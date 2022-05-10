@@ -34,17 +34,17 @@ ForwardingGraph::ForwardingGraph()
 
 bool ForwardingGraph::addLink(const ForwardingLink& link)
 {
-	if(this->links.find(link.rule.location) == this->links.end())
+	if(this->links.find(link.rule.locationInt) == this->links.end())
 	{
 		list< ForwardingLink > linkList;
 		linkList.push_back(link);
-		this->links[link.rule.location] = linkList;
+		this->links[link.rule.locationInt] = linkList;
 		++(this->totalRuleCount);
 		return true;
 	}
 	else
 	{
-		this->links[link.rule.location].push_back(link);
+		this->links[link.rule.locationInt].push_back(link);
 		++(this->totalRuleCount);
 		return true;
 	}
@@ -52,13 +52,13 @@ bool ForwardingGraph::addLink(const ForwardingLink& link)
 
 bool ForwardingGraph::removeLink(const Rule& rule)
 {
-	if(this->links.find(rule.location) == this->links.end())
+	if(this->links.find(rule.locationInt) == this->links.end())
 	{
 		return false;
 	}
 	else
 	{
-		list< ForwardingLink >& linkList = this->links[rule.location];
+		list< ForwardingLink >& linkList = this->links[rule.locationInt];
 		list< ForwardingLink >::iterator itr;
 		for(itr = linkList.begin(); itr != linkList.end(); ++itr)
 		{
@@ -81,7 +81,7 @@ string ForwardingGraph::toString() const
 	sprintf(buffer, "%d", this->totalRuleCount);
 	retVal += buffer;
 
-	unordered_map< string, list< ForwardingLink > >::const_iterator itr;
+	unordered_map< uint64_t, list< ForwardingLink > >::const_iterator itr;
 	for(itr = this->links.begin(); itr != this->links.end(); ++itr)
 	{
 		const list< ForwardingLink >& linkList = itr->second;

@@ -56,7 +56,7 @@ public:
 	~Trie();
 	FieldIndex getFieldIndex();
 	unsigned int getFieldWidth();
-	TrieNode* findNode(const string& fieldValue, const string& fieldMask);
+	TrieNode* findNode(uint64_t fieldValueInt, uint64_t fieldMaskInt);
 	TrieNode* addRule(const Rule& rule);
 	void removeRule(TrieNode* node);
 	void getEquivalenceClasses(const Rule& rule, vector< EquivalenceClass >& vPacketClasses);

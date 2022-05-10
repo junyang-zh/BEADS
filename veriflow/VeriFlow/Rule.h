@@ -35,21 +35,23 @@ class Rule
 {
 public:
 	RuleType type;
-	string fieldValue[ALL_FIELD_INDEX_END_MARKER];
-	string fieldMask[ALL_FIELD_INDEX_END_MARKER];
+	// deprecated string fields
+	//string fieldValue[ALL_FIELD_INDEX_END_MARKER];
+	//string fieldMask[ALL_FIELD_INDEX_END_MARKER];
 	uint64_t fieldValueInt[ALL_FIELD_INDEX_END_MARKER];
 	uint64_t fieldMaskInt[ALL_FIELD_INDEX_END_MARKER];
-	uint64_t locationInt;
+	uint64_t locationInt, nextHopInt;
 
 	uint32_t wildcards;
 
-	string location;
-	string nextHop;
+	// deprecated string fields
+	//string location;
+	//string nextHop;
 	unsigned int in_port;
 	uint16_t priority;
 	// uint16_t outPort; // Not used in this version.
 
-	void initIntValues();
+	// void initIntValues();
 	Rule();
 	void testInit();
 	Rule(const Rule& other);
@@ -57,7 +59,7 @@ public:
 	EquivalenceRange getEquivalenceRange(FieldIndex index) const;
 	bool equals(const Rule& other) const;
 	bool operator==(const Rule& other) const;
-	int operator()() const;
+	uint64_t operator()() const;
 	string toString() const;
 };
 

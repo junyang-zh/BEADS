@@ -20,11 +20,12 @@
 #include <unordered_map>
 #include <sstream>
 #include "Network.h"
+#include "VeriFlow.h"
 #include "ForwardingDevice.h"
 
 using namespace std;
 
-bool Network::addDevice(uint64_t id, const string& ipAddress, bool endDevice)
+bool Network::addDevice(uint64_t id, uint64_t ipAddress, bool endDevice)
 {
 	if(this->isDevicePresent(ipAddress) == false)
 	{
@@ -44,7 +45,7 @@ bool Network::addDevice(uint64_t id, const string& ipAddress, bool endDevice)
 	}
 }
 
-bool Network::addPort(const string& ipAddress, unsigned int port, const string& nextHopIpAddress)
+bool Network::addPort(uint64_t ipAddress, unsigned int port, uint64_t nextHopIpAddress)
 {
 	if(this->isDevicePresent(ipAddress) == false)
 	{
@@ -57,17 +58,17 @@ bool Network::addPort(const string& ipAddress, unsigned int port, const string& 
 	}
 }
 
-string Network::getNextHopIpAddress(const string& ipAddress, unsigned int port)
+uint64_t Network::getNextHopIpAddress(uint64_t ipAddress, unsigned int port)
 {
 	if(this->isDevicePresent(ipAddress) == false)
 	{
-		return "NULL";
+		return IP_INVALID;
 	}
 	else
 	{
 		if(this->isPortPresent(ipAddress, port) ==  false)
 		{
-			return "NULL";
+			return IP_INVALID;
 		}
 		else
 		{
@@ -76,7 +77,7 @@ string Network::getNextHopIpAddress(const string& ipAddress, unsigned int port)
 	}
 }
 
-bool Network::isEndDevice(const string& ipAddress)
+bool Network::isEndDevice(uint64_t ipAddress)
 {
 	if(this->isDevicePresent(ipAddress) == false)
 	{
@@ -88,7 +89,7 @@ bool Network::isEndDevice(const string& ipAddress)
 	}
 }
 
-bool Network::isDevicePresent(const string& ipAddress) const
+bool Network::isDevicePresent(uint64_t ipAddress) const
 {
 	if(this->deviceMap.find(ipAddress) == this->deviceMap.end())
 	{
@@ -100,7 +101,7 @@ bool Network::isDevicePresent(const string& ipAddress) const
 	}
 }
 
-bool Network::isPortPresent(const string& ipAddress, unsigned int port)
+bool Network::isPortPresent(uint64_t ipAddress, unsigned int port)
 {
 	if(this->isDevicePresent(ipAddress) == false)
 	{
@@ -119,11 +120,11 @@ bool Network::isPortPresent(const string& ipAddress, unsigned int port)
 	}
 }
 
-string Network::getDeviceIpAddress(uint64_t id)
+uint64_t Network::getDeviceIpAddress(uint64_t id)
 {
 	if(this->idToIpAddressMap.find(id) == this->idToIpAddressMap.end())
 	{
-		return "NULL";
+		return IP_INVALID;
 	}
 	else
 	{
@@ -133,24 +134,24 @@ string Network::getDeviceIpAddress(uint64_t id)
 
 void Network::print() const
 {
-	unordered_map< string, ForwardingDevice >::const_iterator itr1;
+	unordered_map< uint64_t, ForwardingDevice >::const_iterator itr1;
 	for(itr1 = this->deviceMap.begin(); itr1 != this->deviceMap.end(); itr1++)
 	{
 		const ForwardingDevice& device = itr1->second;
 		fprintf(stdout, "id %lu ipAddress %s endDevice %d", device.id, device.ipAddress.c_str(), device.endDevice);
 
-		unordered_map< unsigned int, string >::const_iterator itr2;
+		unordered_map< unsigned int, uint64_t >::const_iterator itr2;
 		for(itr2 = device.portToNextHopIpAddressMap.begin(); itr2 != device.portToNextHopIpAddressMap.end(); itr2++)
 		{
-			fprintf(stdout, " port %u nextHopIpAddress %s", itr2->first, itr2->second.c_str());
+			fprintf(stdout, " port %u nextHopIpAddress %s", itr2->first, ::getIpValueAsString(itr2->second).c_str());
 		}
 
 		fprintf(stdout, "\n\n");
 	}
 
-	unordered_map< uint64_t, string >::const_iterator itr3;
+	unordered_map< uint64_t, uint64_t >::const_iterator itr3;
 	for(itr3 = this->idToIpAddressMap.begin(); itr3 != this->idToIpAddressMap.end(); itr3++)
 	{
-		fprintf(stdout, "id %lu ipAddress %s\n", itr3->first, itr3->second.c_str());
+		fprintf(stdout, "id %lu ipAddress %s\n", itr3->first, ::getIpValueAsString(itr3->second).c_str());
 	}
 }

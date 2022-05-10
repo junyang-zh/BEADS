@@ -22,6 +22,7 @@
 
 using namespace std;
 
+/* deprecated string values
 void Rule::initIntValues() {
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
@@ -42,7 +43,7 @@ void Rule::initIntValues() {
 		}
 	}
 	this->locationInt = ::getIpValueAsInt(this->location);
-}
+}*/
 
 Rule::Rule()
 {
@@ -50,18 +51,22 @@ Rule::Rule()
 
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		this->fieldValue[i] = "0";
-		this->fieldMask[i] = "0";
+		//this->fieldValue[i] = "0";
+		//this->fieldMask[i] = "0";
+		this->fieldValueInt[i] = 0;
+		this->fieldMaskInt[i] = 0;
 	}
 
 	this->wildcards = 0;
 
-	this->location = "";
-	this->nextHop = "";
+	//this->location = "";
+	//this->nextHop = "";
+	this->locationInt = 0;
+	this->nextHopInt = 0;
 	this->in_port = 65536;
 	this->priority = INVALID_PRIORITY;
 	// this->outPort = OFPP_NONE;
-	this->initIntValues();
+	// this->initIntValues();
 }
 
 Rule::Rule(const Rule& other)
@@ -70,17 +75,18 @@ Rule::Rule(const Rule& other)
 
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		this->fieldValue[i] = other.fieldValue[i];
-		this->fieldMask[i] = other.fieldMask[i];
+		//this->fieldValue[i] = other.fieldValue[i];
+		//this->fieldMask[i] = other.fieldMask[i];
 		this->fieldValueInt[i] = other.fieldValueInt[i];
 		this->fieldMaskInt[i] = other.fieldMaskInt[i];
 	}
 	this->locationInt = other.locationInt;
+	this->nextHopInt = other.nextHopInt;
 
 	this->wildcards = other.wildcards;
 
-	this->location = other.location;
-	this->nextHop = other.nextHop;
+	//this->location = other.location;
+	//this->nextHop = other.nextHop;
 	this->in_port = other.in_port;
 	this->priority = other.priority;
 	// this->outPort = other.outPort;
@@ -194,22 +200,28 @@ bool Rule::operator==(const Rule& other) const
 	return this->equals(other);
 }
 
-int Rule::operator()() const
+uint64_t Rule::operator()() const
 {
-	int retVal = 0;
+	uint64_t retVal = 0;
 	for(int i = 0; i < ALL_FIELD_INDEX_END_MARKER; i++)
 	{
-		retVal += (int)this->fieldValueInt[i] + (int)this->fieldMaskInt[i];
+		retVal += this->fieldValueInt[i];
+		retVal *= 7; retVal ^= (retVal >> 5);
+		retVal += this->fieldMaskInt[i];
+		retVal *= 7;
 	}
-
 	retVal += this->type;
-	retVal += (int)this->wildcards;
-	retVal += (int)this->locationInt;
+	retVal *= 7; retVal ^= (retVal >> 5);
+	retVal += this->wildcards;
+	retVal *= 7; retVal ^= (retVal >> 5);
+	retVal += this->locationInt;
+	retVal *= 7; retVal ^= (retVal >> 5);
 	retVal += this->in_port;
+	retVal *= 7; retVal ^= (retVal >> 5);
 	// retVal += (int)::getIpValueAsInt(this->nextHop);
 	retVal += this->priority;
+	retVal *= 7; retVal ^= (retVal >> 5);
 	// retVal += this->outPort;
-
 	return retVal;
 }
 
@@ -218,21 +230,26 @@ string Rule::toString() const
 	char buffer[1024];
 	sprintf(buffer, "[Rule] type: %d, dlSrcAddr: %s, dlSrcAddrMask: %s, dlDstAddr: %s, dlDstAddrMask: %s, nwSrcAddr: %s, nwSrcAddrMask: %s, nwDstAddr: %s, nwDstAddrMask: %s, location: %s, nextHop: %s, in_port: %u, priority: %u",
 			this->type,
-			this->fieldValue[DL_SRC].c_str(), this->fieldMask[DL_SRC].c_str(),
-			this->fieldValue[DL_DST].c_str(), this->fieldMask[DL_DST].c_str(),
-			this->fieldValue[NW_SRC].c_str(), this->fieldMask[NW_SRC].c_str(),
-			this->fieldValue[NW_DST].c_str(), this->fieldMask[NW_DST].c_str(),
-			this->location.c_str(), this->nextHop.c_str(), this->in_port, this->priority);
+			getMacValueAsString(this->fieldValueInt[DL_SRC]).c_str(),
+			getMacValueAsString(this->fieldMaskInt[DL_SRC]).c_str(),
+			getMacValueAsString(this->fieldValueInt[DL_DST]).c_str(),
+			getMacValueAsString(this->fieldMaskInt[DL_DST]).c_str(),
+			getIpValueAsString(this->fieldValueInt[NW_SRC]).c_str(),
+			getIpValueAsString(this->fieldMaskInt[NW_SRC]).c_str(),
+			getIpValueAsString(this->fieldValueInt[NW_DST]).c_str(),
+			getIpValueAsString(this->fieldMaskInt[NW_DST]).c_str(),
+			getIpValueAsString(this->locationInt).c_str(),
+			getIpValueAsString(this->nextHopInt).c_str(), this->in_port, this->priority);
 
 	string retVal = buffer;
 	retVal += ", ";
 
-	sprintf(buffer, "wildcards: %u, in_port: %s, dl_type: %s, dl_vlan: %s, dl_vlan_pcp: %s, mpls_label: %s, mpls_tc: %s, nw_proto: %s, nw_tos: %s, tp_src: %s, tp_dst: %s",
-			this->wildcards, this->fieldValue[IN_PORT].c_str(), this->fieldValue[DL_TYPE].c_str(),
-			this->fieldValue[DL_VLAN].c_str(), this->fieldValue[DL_VLAN_PCP].c_str(),
-			this->fieldValue[MPLS_LABEL].c_str(), this->fieldValue[MPLS_TC].c_str(),
-			this->fieldValue[NW_PROTO].c_str(), this->fieldValue[NW_TOS].c_str(),
-			this->fieldValue[TP_SRC].c_str(), this->fieldValue[TP_DST].c_str());
+	sprintf(buffer, "wildcards: %u, in_port: %#lx, dl_type: %#lx, dl_vlan: %#lx, dl_vlan_pcp: %#lx, mpls_label: %#lx, mpls_tc: %#lx, nw_proto: %#lx, nw_tos: %#lx, tp_src: %#lx, tp_dst: %#lx",
+			this->wildcards, this->fieldValueInt[IN_PORT], this->fieldValueInt[DL_TYPE],
+			this->fieldValueInt[DL_VLAN], this->fieldValueInt[DL_VLAN_PCP],
+			this->fieldValueInt[MPLS_LABEL], this->fieldValueInt[MPLS_TC],
+			this->fieldValueInt[NW_PROTO], this->fieldValueInt[NW_TOS],
+			this->fieldValueInt[TP_SRC], this->fieldValueInt[TP_DST]);
 
 	retVal += buffer;
 	return retVal;

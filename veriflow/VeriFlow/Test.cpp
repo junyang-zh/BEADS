@@ -36,6 +36,7 @@ using namespace std;
 
 void Test::testVerification()
 {
+#ifdef TEST_IS_VALID
 	double updateTime, packetClassSearchTime, graphBuildTime, queryTime, verificationTime;
 	unsigned long ecCount;
 
@@ -208,6 +209,7 @@ void Test::testVerification()
 
 	fprintf(stdout, "\nRuleSet 1 VerificationTime(usec) %f EquivalenceClassCount %lu UpdateTime(usec) %f PacketSearchTime(usec) %f GraphBuildTime(usec) %f QueryTime(usec) %f\n",
 		verificationTime, ecCount, updateTime, packetClassSearchTime, graphBuildTime, queryTime);
+#endif
 }
 
 void Test::test()

@@ -284,7 +284,7 @@ void OpenFlowProtocolMessage::processFlowRemoved(const char* data, ProxyConnecti
 	pthread_mutex_unlock(info.veriflowMutex);
 
 	pthread_mutex_lock(info.networkMutex);
-	string deviceIpAddress = info.network->getDeviceIpAddress(datapathId);
+	uint64_t deviceIpAddress = info.network->getDeviceIpAddress(datapathId);
 	pthread_mutex_unlock(info.networkMutex);
 	// fprintf(fp, "Found address %s\n", deviceIpAddress.c_str());
 
@@ -292,63 +292,89 @@ void OpenFlowProtocolMessage::processFlowRemoved(const char* data, ProxyConnecti
 	rule.type = FORWARDING;
 	rule.wildcards = ntohl(ofr->match.wildcards);
 
-	rule.fieldValue[IN_PORT] = "0";//::convertIntToString(ntohs(ofr->match.in_port));
-	rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
+	//rule.fieldValue[IN_PORT] = "0";
+	//rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
+	rule.fieldValueInt[IN_PORT] = 0;
+	rule.fieldMaskInt[IN_PORT] = 0;
 
 	rule.in_port = ntohs(ofr->match.in_port);
 
-	rule.fieldValue[DL_SRC] = ::getMacValueAsString(ofr->match.dl_src);
-	rule.fieldMask[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+	rule.fieldValueInt[DL_SRC] = ::getMacValueAsInt(ofr->match.dl_src);
+	//rule.fieldMask[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+	rule.fieldMaskInt[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? 0 : 0xFFFFFFFFFFFF;
 
-	rule.fieldValue[DL_DST] = ::getMacValueAsString(ofr->match.dl_dst);
-	rule.fieldMask[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+	rule.fieldValueInt[DL_DST] = ::getMacValueAsInt(ofr->match.dl_dst);
+	//rule.fieldMask[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+	rule.fieldMaskInt[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? 0 : 0xFFFFFFFFFFFF;
 
-	rule.fieldValue[DL_TYPE] = ::convertIntToString(ntohs(ofr->match.dl_type));
-	rule.fieldMask[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? "0" : "65535";
+	//rule.fieldValue[DL_TYPE] = ::convertIntToString(ntohs(ofr->match.dl_type));
+	//rule.fieldMask[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? "0" : "65535";
+	rule.fieldValueInt[DL_TYPE] = ntohs(ofr->match.dl_type);
+	rule.fieldMaskInt[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? 0 : 65535;
 
-	rule.fieldValue[DL_VLAN] = ::convertIntToString(ntohs(ofr->match.dl_vlan));
-	rule.fieldMask[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? "0" : "4095";
+	//rule.fieldValue[DL_VLAN] = ::convertIntToString(ntohs(ofr->match.dl_vlan));
+	//rule.fieldMask[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? "0" : "4095";
+	rule.fieldValueInt[DL_VLAN] = ntohs(ofr->match.dl_vlan);
+	rule.fieldMaskInt[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? 0 : 4095;
 
-	rule.fieldValue[DL_VLAN_PCP] = ::convertIntToString(ofr->match.dl_vlan_pcp);
-	rule.fieldMask[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? "0" : "7";
+	//rule.fieldValue[DL_VLAN_PCP] = ::convertIntToString(ofr->match.dl_vlan_pcp);
+	//rule.fieldMask[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? "0" : "7";
+	rule.fieldValueInt[DL_VLAN_PCP] = ofr->match.dl_vlan_pcp;
+	rule.fieldMaskInt[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? 0 : 7;
 
-	rule.fieldValue[MPLS_LABEL] = "0";
-	rule.fieldMask[MPLS_LABEL] = "0";
+	//rule.fieldValue[MPLS_LABEL] = "0";
+	//rule.fieldMask[MPLS_LABEL] = "0";
+	rule.fieldValueInt[MPLS_LABEL] = 0;
+	rule.fieldMaskInt[MPLS_LABEL] = 0;
 
-	rule.fieldValue[MPLS_TC] = "0";
-	rule.fieldMask[MPLS_TC] = "0";
+	//rule.fieldValue[MPLS_TC] = "0";
+	//rule.fieldMask[MPLS_TC] = "0";
+	rule.fieldValueInt[MPLS_TC] = 0;
+	rule.fieldMaskInt[MPLS_TC] = 0;
 
-	rule.fieldValue[NW_SRC] = ::getIpValueAsString(ntohl(ofr->match.nw_src));
-	rule.fieldMask[NW_SRC] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
+	//rule.fieldValue[NW_SRC] = ::getIpValueAsString(ntohl(ofr->match.nw_src));
+	//rule.fieldMask[NW_SRC] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
+	rule.fieldValueInt[NW_SRC] = ntohl(ofr->match.nw_src);
+	rule.fieldMaskInt[NW_SRC] = ::convertMaskLenToInt((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
 	if(rule.wildcards == OFPFW_ALL)
 	{
-		rule.fieldMask[NW_SRC] = "0.0.0.0";
+		//rule.fieldMask[NW_SRC] = "0.0.0.0";
+		rule.fieldMaskInt[NW_SRC] = 0;
 	}
 
-	rule.fieldValue[NW_DST] = ::getIpValueAsString(ntohl(ofr->match.nw_dst));
-	rule.fieldMask[NW_DST] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
+	//rule.fieldValue[NW_DST] = ::getIpValueAsString(ntohl(ofr->match.nw_dst));
+	//rule.fieldMask[NW_DST] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
+	rule.fieldValueInt[NW_DST] = ntohl(ofr->match.nw_dst);
+	rule.fieldMaskInt[NW_DST] = ::convertMaskLenToInt((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
 	if(rule.wildcards == OFPFW_ALL)
 	{
-		rule.fieldMask[NW_DST] = "0.0.0.0";
+		//rule.fieldMask[NW_DST] = "0.0.0.0";
+		rule.fieldMaskInt[NW_DST] = 0;
 	}
 
-	rule.fieldValue[NW_PROTO] = ::convertIntToString(ofr->match.nw_proto);
-	rule.fieldMask[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? "0" : "255";
+	//rule.fieldValue[NW_PROTO] = ::convertIntToString(ofr->match.nw_proto);
+	//rule.fieldMask[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? "0" : "255";
+	rule.fieldValueInt[NW_PROTO] = ofr->match.nw_proto;
+	rule.fieldMaskInt[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? 0 : 255;
 
-	rule.fieldValue[NW_TOS] = ::convertIntToString(ofr->match.nw_tos);
-	rule.fieldMask[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? "0" : "63";
+	//rule.fieldValue[NW_TOS] = ::convertIntToString(ofr->match.nw_tos);
+	//rule.fieldMask[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? "0" : "63";
+	rule.fieldValueInt[NW_TOS] = ofr->match.nw_tos;
+	rule.fieldMaskInt[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? 0 : 63;
 
-	rule.fieldValue[TP_SRC] = ::convertIntToString(ntohs(ofr->match.tp_src));
-	rule.fieldMask[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? "0" : "65535";
+	//rule.fieldValue[TP_SRC] = ::convertIntToString(ntohs(ofr->match.tp_src));
+	//rule.fieldMask[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? "0" : "65535";
+	rule.fieldValueInt[TP_SRC] = ntohs(ofr->match.tp_src);
+	rule.fieldMaskInt[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? 0 : 65535;
 
-	rule.fieldValue[TP_DST] = ::convertIntToString(ntohs(ofr->match.tp_dst));
-	rule.fieldMask[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? "0" : "65535";
+	//rule.fieldValue[TP_DST] = ::convertIntToString(ntohs(ofr->match.tp_dst));
+	//rule.fieldMask[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? "0" : "65535";
+	rule.fieldValueInt[TP_DST] = ntohs(ofr->match.tp_dst);
+	rule.fieldMaskInt[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? 0 : 65535;
 
-	rule.location = deviceIpAddress;
-	rule.nextHop = "";
+	rule.locationInt = deviceIpAddress;
+	rule.nextHopInt = IP_INVALID;
 	rule.priority = ntohs(ofr->priority);
-
-	rule.initIntValues();
 
 	/*double updateTime = 0, packetClassSearchTime = 0, graphBuildTime = 0, queryTime = 0;
 	unsigned long ecCount = 0;*/
@@ -401,7 +427,7 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 				pthread_mutex_unlock(info.veriflowMutex);
 
 				pthread_mutex_lock(info.networkMutex);
-				string deviceIpAddress = info.network->getDeviceIpAddress(datapathId);
+				uint64_t deviceIpAddress = info.network->getDeviceIpAddress(datapathId);
 				pthread_mutex_unlock(info.networkMutex);
 				// fprintf(fp, "Found address %s\n", deviceIpAddress.c_str());
 
@@ -409,63 +435,89 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 				rule.type = FORWARDING;
 				rule.wildcards = ntohl(ofm->match.wildcards);
 
-				rule.fieldValue[IN_PORT] = "0";
-				rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
+				//rule.fieldValue[IN_PORT] = "0";
+				//rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
+				rule.fieldValueInt[IN_PORT] = 0;
+				rule.fieldMaskInt[IN_PORT] = 0;
 
 				rule.in_port = ntohs(ofm->match.in_port);
 
-				rule.fieldValue[DL_SRC] = ::getMacValueAsString(ofm->match.dl_src);
-				rule.fieldMask[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+				rule.fieldValueInt[DL_SRC] = ::getMacValueAsInt(ofm->match.dl_src);
+				//rule.fieldMask[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+				rule.fieldMaskInt[DL_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_SRC) != 0)) ? 0 : 0xFFFFFFFFFFFF;
 
-				rule.fieldValue[DL_DST] = ::getMacValueAsString(ofm->match.dl_dst);
-				rule.fieldMask[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+				rule.fieldValueInt[DL_DST] = ::getMacValueAsInt(ofm->match.dl_dst);
+				//rule.fieldMask[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? "0:0:0:0:0:0" : "FF:FF:FF:FF:FF:FF";
+				rule.fieldMaskInt[DL_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_DST) != 0)) ? 0 : 0xFFFFFFFFFFFF;
 
-				rule.fieldValue[DL_TYPE] = ::convertIntToString(ntohs(ofm->match.dl_type));
-				rule.fieldMask[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? "0" : "65535";
+				//rule.fieldValue[DL_TYPE] = ::convertIntToString(ntohs(ofm->match.dl_type));
+				//rule.fieldMask[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? "0" : "65535";
+				rule.fieldValueInt[DL_TYPE] = ntohs(ofm->match.dl_type);
+				rule.fieldMaskInt[DL_TYPE] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_TYPE) != 0)) ? 0 : 65535;
 
-				rule.fieldValue[DL_VLAN] = ::convertIntToString(ntohs(ofm->match.dl_vlan));
-				rule.fieldMask[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? "0" : "4095";
+				//rule.fieldValue[DL_VLAN] = ::convertIntToString(ntohs(ofm->match.dl_vlan));
+				//rule.fieldMask[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? "0" : "4095";
+				rule.fieldValueInt[DL_VLAN] = ntohs(ofm->match.dl_vlan);
+				rule.fieldMaskInt[DL_VLAN] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN) != 0)) ? 0 : 4095;
 
-				rule.fieldValue[DL_VLAN_PCP] = ::convertIntToString(ofm->match.dl_vlan_pcp);
-				rule.fieldMask[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? "0" : "7";
+				//rule.fieldValue[DL_VLAN_PCP] = ::convertIntToString(ofm->match.dl_vlan_pcp);
+				//rule.fieldMask[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? "0" : "7";
+				rule.fieldValueInt[DL_VLAN_PCP] = ofm->match.dl_vlan_pcp;
+				rule.fieldMaskInt[DL_VLAN_PCP] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_DL_VLAN_PCP) != 0)) ? 0 : 7;
 
-				rule.fieldValue[MPLS_LABEL] = "0";
-				rule.fieldMask[MPLS_LABEL] = "0";
+				//rule.fieldValue[MPLS_LABEL] = "0";
+				//rule.fieldMask[MPLS_LABEL] = "0";
+				rule.fieldValueInt[MPLS_LABEL] = 0;
+				rule.fieldMaskInt[MPLS_LABEL] = 0;
 
-				rule.fieldValue[MPLS_TC] = "0";
-				rule.fieldMask[MPLS_TC] = "0";
+				//rule.fieldValue[MPLS_TC] = "0";
+				//rule.fieldMask[MPLS_TC] = "0";
+				rule.fieldValueInt[MPLS_TC] = 0;
+				rule.fieldMaskInt[MPLS_TC] = 0;
 
-				rule.fieldValue[NW_SRC] = ::getIpValueAsString(ntohl(ofm->match.nw_src));
-				rule.fieldMask[NW_SRC] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
+				//rule.fieldValue[NW_SRC] = ::getIpValueAsString(ntohl(ofm->match.nw_src));
+				//rule.fieldMask[NW_SRC] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
+				rule.fieldValueInt[NW_SRC] = ntohl(ofm->match.nw_src);
+				rule.fieldMaskInt[NW_SRC] = ::convertMaskLenToInt((rule.wildcards & OFPFW_NW_SRC_MASK) >> OFPFW_NW_SRC_SHIFT);
 				if(rule.wildcards == OFPFW_ALL)
 				{
-					rule.fieldMask[NW_SRC] = "0.0.0.0";
+					//rule.fieldMask[NW_SRC] = "0.0.0.0";
+					rule.fieldMaskInt[NW_SRC] = 0;
 				}
 
-				rule.fieldValue[NW_DST] = ::getIpValueAsString(ntohl(ofm->match.nw_dst));
-				rule.fieldMask[NW_DST] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
+				//rule.fieldValue[NW_DST] = ::getIpValueAsString(ntohl(ofm->match.nw_dst));
+				//rule.fieldMask[NW_DST] = convertMaskToDottedFormat((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
+				rule.fieldValueInt[NW_DST] = ntohl(ofm->match.nw_dst);
+				rule.fieldMaskInt[NW_DST] = ::convertMaskLenToInt((rule.wildcards & OFPFW_NW_DST_MASK) >> OFPFW_NW_DST_SHIFT);
 				if(rule.wildcards == OFPFW_ALL)
 				{
-					rule.fieldMask[NW_DST] = "0.0.0.0";
+					//rule.fieldMask[NW_DST] = "0.0.0.0";
+					rule.fieldMaskInt[NW_DST] = 0;
 				}
 
-				rule.fieldValue[NW_PROTO] = ::convertIntToString(ofm->match.nw_proto);
-				rule.fieldMask[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? "0" : "255";
+				//rule.fieldValue[NW_PROTO] = ::convertIntToString(ofm->match.nw_proto);
+				//rule.fieldMask[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? "0" : "255";
+				rule.fieldValueInt[NW_PROTO] = ofm->match.nw_proto;
+				rule.fieldMaskInt[NW_PROTO] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_PROTO) != 0)) ? 0 : 255;
 
-				rule.fieldValue[NW_TOS] = ::convertIntToString(ofm->match.nw_tos);
-				rule.fieldMask[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? "0" : "63";
+				//rule.fieldValue[NW_TOS] = ::convertIntToString(ofm->match.nw_tos);
+				//rule.fieldMask[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? "0" : "63";
+				rule.fieldValueInt[NW_TOS] = ofm->match.nw_tos;
+				rule.fieldMaskInt[NW_TOS] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_NW_TOS) != 0)) ? 0 : 63;
 
-				rule.fieldValue[TP_SRC] = ::convertIntToString(ntohs(ofm->match.tp_src));
-				rule.fieldMask[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? "0" : "65535";
+				//rule.fieldValue[TP_SRC] = ::convertIntToString(ntohs(ofm->match.tp_src));
+				//rule.fieldMask[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? "0" : "65535";
+				rule.fieldValueInt[TP_SRC] = ntohs(ofm->match.tp_src);
+				rule.fieldMaskInt[TP_SRC] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_SRC) != 0)) ? 0 : 65535;
 
-				rule.fieldValue[TP_DST] = ::convertIntToString(ntohs(ofm->match.tp_dst));
-				rule.fieldMask[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? "0" : "65535";
+				//rule.fieldValue[TP_DST] = ::convertIntToString(ntohs(ofm->match.tp_dst));
+				//rule.fieldMask[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? "0" : "65535";
+				rule.fieldValueInt[TP_DST] = ntohs(ofm->match.tp_dst);
+				rule.fieldMaskInt[TP_DST] = ((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_TP_DST) != 0)) ? 0 : 65535;
 
-				rule.location = deviceIpAddress;
-				rule.nextHop = info.network->getNextHopIpAddress(deviceIpAddress, ntohs(oao->port));
+				rule.locationInt = deviceIpAddress;
+				rule.nextHopInt = info.network->getNextHopIpAddress(deviceIpAddress, ntohs(oao->port));
 				rule.priority = ntohs(ofm->priority);
-
-				rule.initIntValues();
 
 				double updateTime = 0, packetClassSearchTime = 0, graphBuildTime = 0, queryTime = 0;
 				unsigned long ecCount = 0;
