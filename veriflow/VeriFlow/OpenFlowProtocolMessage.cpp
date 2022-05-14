@@ -294,8 +294,8 @@ void OpenFlowProtocolMessage::processFlowRemoved(const char* data, ProxyConnecti
 
 	//rule.fieldValue[IN_PORT] = "0";
 	//rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
-	rule.fieldValueInt[IN_PORT] = 0;
-	rule.fieldMaskInt[IN_PORT] = 0;
+	//rule.fieldValueInt[IN_PORT] = 0;
+	//rule.fieldMaskInt[IN_PORT] = 0;
 
 	rule.in_port = ntohs(ofr->match.in_port);
 
@@ -437,8 +437,8 @@ void OpenFlowProtocolMessage::processFlowMod(const char* data, ProxyConnectionIn
 
 				//rule.fieldValue[IN_PORT] = "0";
 				//rule.fieldMask[IN_PORT] = "0";//((rule.wildcards == OFPFW_ALL) || ((rule.wildcards & OFPFW_IN_PORT) != 0)) ? "0" : "65535";
-				rule.fieldValueInt[IN_PORT] = 0;
-				rule.fieldMaskInt[IN_PORT] = 0;
+				//rule.fieldValueInt[IN_PORT] = 0;
+				//rule.fieldMaskInt[IN_PORT] = 0;
 
 				rule.in_port = ntohs(ofm->match.in_port);
 

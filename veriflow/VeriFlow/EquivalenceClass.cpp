@@ -170,9 +170,9 @@ uint64_t EquivalenceClass::getMaxValue(FieldIndex index)
 {
 	switch(index)
 	{
-	case IN_PORT:
+	/*case IN_PORT:
 		return 0xFFFF;
-		break;
+		break;*/
 
 	case DL_SRC:
 		return 0xFFFFFFFFFFFFLLU;

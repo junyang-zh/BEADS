@@ -244,8 +244,8 @@ string Rule::toString() const
 	string retVal = buffer;
 	retVal += ", ";
 
-	sprintf(buffer, "wildcards: %u, in_port: %#lx, dl_type: %#lx, dl_vlan: %#lx, dl_vlan_pcp: %#lx, mpls_label: %#lx, mpls_tc: %#lx, nw_proto: %#lx, nw_tos: %#lx, tp_src: %#lx, tp_dst: %#lx",
-			this->wildcards, this->fieldValueInt[IN_PORT], this->fieldValueInt[DL_TYPE],
+	sprintf(buffer, "wildcards: %u, dl_type: %#lx, dl_vlan: %#lx, dl_vlan_pcp: %#lx, mpls_label: %#lx, mpls_tc: %#lx, nw_proto: %#lx, nw_tos: %#lx, tp_src: %#lx, tp_dst: %#lx",
+			this->wildcards, this->fieldValueInt[DL_TYPE],
 			this->fieldValueInt[DL_VLAN], this->fieldValueInt[DL_VLAN_PCP],
 			this->fieldValueInt[MPLS_LABEL], this->fieldValueInt[MPLS_TC],
 			this->fieldValueInt[NW_PROTO], this->fieldValueInt[NW_TOS],

@@ -25,26 +25,44 @@ using namespace std;
 
 enum FieldIndex
 {
-	IN_PORT, // 0
-	DL_SRC,
-	DL_DST,
+	// IN_PORT, // 0
 	DL_TYPE,
 	DL_VLAN,
 	DL_VLAN_PCP,
 	MPLS_LABEL,
 	MPLS_TC,
-	NW_SRC,
-	NW_DST,
 	NW_PROTO,
 	NW_TOS,
 	TP_SRC,
 	TP_DST,
-	ALL_FIELD_INDEX_END_MARKER, // 14
+	DL_SRC,
+	DL_DST,
+	NW_SRC,
+	NW_DST,
+	ALL_FIELD_INDEX_END_MARKER, // 12
 	METADATA, // 15, not used in this version.
 	WILDCARDS // 16
 };
 
-const unsigned int fieldWidth[] = {16, 48, 48, 16, 12, 3, 20, 3, 32, 32, 8, 6, 16, 16, 0, 64, 32};
+const unsigned int fieldWidth[] = {
+	// 16, // IN_PORT
+	16, // DL_TYPE
+	12, // DL_VLAN
+	3,	// DL_VLAN_PCP
+	20, // MPLS_LABEL
+	3,	// MPLS_TC
+	8,	// NW_PROTO
+	6,	// NW_TOS
+	16, // TP_SRC
+	16, // TP_DST
+	48, // DL_SRC
+	48, // DL_DST
+	32,	// NW_SRC
+	32, // NW_DST
+	0,	// ALL_FIELD_INDEX_END_MARKER
+	64, // METADATA
+	32	// WILDCARDS
+};
 
 class EquivalenceClass
 {

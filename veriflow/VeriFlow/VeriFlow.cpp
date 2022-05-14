@@ -492,7 +492,7 @@ bool compareForwardingLink(const ForwardingLink& first, const ForwardingLink& se
 
 VeriFlow::VeriFlow()
 {
-	this->primaryTrie = new Trie(IN_PORT);
+	this->primaryTrie = new Trie(static_cast<FieldIndex>(0));
 	this->previousFailures = 0;
 	if(this->primaryTrie == NULL)
 	{
@@ -675,7 +675,7 @@ bool VeriFlow::getAffectedEquivalenceClasses(const Rule& rule, int command, vect
 	if (rule.type == FORWARDING) {
 		uint64_t cur_lbs[ALL_FIELD_INDEX_END_MARKER], cur_ubs[ALL_FIELD_INDEX_END_MARKER];
 		this->taverseNestedTries(
-			rule, IN_PORT, cur_lbs, cur_ubs,
+			rule, static_cast<FieldIndex>(0), cur_lbs, cur_ubs,
 			vInPortPacketClasses, vInPortTries, vFinalPacketClasses, vFinalTries
 		);
 	}
@@ -826,7 +826,8 @@ bool VeriFlow::verifyRule(const Rule& rule, int command, double& updateTime, dou
 	{
 		EquivalenceClass packetClass = vFinalPacketClasses[i];
 		// fprintf(stdout, "[VeriFlow::verifyRule] [%u] ecCount: %lu, %s\n", i, ecCount, packetClass.toString().c_str());
-		ForwardingGraph* graph = Trie::getForwardingGraph(TP_DST, vFinalTries[i], packetClass, fp);
+		ForwardingGraph* graph = Trie::getForwardingGraph(
+			static_cast<FieldIndex>(ALL_FIELD_INDEX_END_MARKER - 1), vFinalTries[i], packetClass, fp);
 		vGraph.push_back(graph);
 	}
 	gettimeofday(&end, NULL);
